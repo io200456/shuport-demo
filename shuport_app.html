@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>就活支援Webアプリケーション ShuPort（シュポート）</title>
+
+  <!-- Noto Sans JP (標準:400, 太字:700) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      darkMode: 'class',
+      theme: { extend: { colors: { brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 800: '#1e40af', 900: '#1e3a8a' } } } }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+<aside>
+    <div>
+      <div class="logo-area">
+        <i data-lucide="compass" style="color: var(--color-brand-main);"></i> ShuPort
+      </div>
+      <ul class="nav-list">
+        <li><a class="nav-item active" onclick="switchView('home', event)"><div class="nav-icon-tile"><i data-lucide="layout-dashboard"></i></div>ホーム画面</a></li>
+        <li><a class="nav-item" onclick="switchView('mypage', event)"><div class="nav-icon-tile"><i data-lucide="user"></i></div>マイページ</a></li>
+        <li><a class="nav-item" onclick="switchView('company-list', event)"><div class="nav-icon-tile"><i data-lucide="building-2"></i></div>企業一覧</a></li>
+        <li><a class="nav-item" onclick="switchView('es-create', event)"><div class="nav-icon-tile"><i data-lucide="file-text"></i></div>ES作成</a></li>
+        <li><a class="nav-item" onclick="switchView('add-company', event)"><div class="nav-icon-tile"><i data-lucide="wand-sparkles"></i></div>企業追加・AI研究</a></li>
+        <li><a class="nav-item" onclick="switchView('calendar', event)"><div class="nav-icon-tile"><i data-lucide="calendar"></i></div>カレンダー</a></li>
+        <li><a class="nav-item" onclick="switchView('tasks', event)"><div class="nav-icon-tile"><i data-lucide="check-square"></i></div>タスクリスト</a></li>
+        <li><a class="nav-item" onclick="switchView('settings', event)"><div class="nav-icon-tile"><i data-lucide="settings"></i></div>設定</a></li>
+      </ul>
+    </div>
+    <div style="font-size: var(--font-size-caption); color: var(--color-text-muted); border-top: 1px solid var(--color-border); pt: var(--space-3);">
+      ShuPort Web App v8
+    </div>
+  </aside>
+<main><div id="screens-container" aria-live="polite"></div></main>
+
+
+  <!-- ----------------------------------
+     企業詳細モーダル（全3タブ構造）
+     ---------------------------------- -->
+  <div id="companyDetailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-150">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div id="modalCompanyLogo" class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center font-bold text-lg text-white shadow">
+                        M
+                    </div>
+                    <div>
+                        <h3 id="modalCompanyName" class="text-lg font-bold tracking-tight">株式会社メルカリ</h3>
+                        <p id="modalCompanyIndustry" class="text-xs text-slate-400">IT・インターネット / メディア</p>
+                    </div>
+                </div>
+                <button onclick="closeCompanyModal()" class="text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Tab Buttons -->
+            <div class="bg-slate-100 px-6 border-b border-slate-200 flex space-x-6 text-sm font-medium text-slate-600 shrink-0">
+                <button onclick="switchModalTab('tabResearch')" id="modalTabBtnResearch" class="py-3 border-b-2 border-brand-600 text-brand-600 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i>
+                    <span>① 企業研究結果 (v8 4大項目)</span>
+                </button>
+                <button onclick="switchModalTab('tabProfile')" id="modalTabBtnProfile" class="py-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>② 募集要項情報</span>
+                </button>
+                <button onclick="switchModalTab('tabES')" id="modalTabBtnES" class="py-3 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <span>③ ES閲覧 (志望動機込)</span>
+                </button>
+            </div>
+
+            <!-- Modal Body Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+
+                <!-- TAB 1: AI Research Results (v8 Specification) -->
+                <div id="modalTabResearch" class="space-y-5">
+                    <!-- Mandatory Disclaimer Banner -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3.5 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-info text-blue-600 text-base mt-0.5"></i>
+                        <div class="text-xs text-blue-900 space-y-0.5">
+                            <div class="flex items-center gap-2 font-bold">
+                                <span>AI企業分析免責表示 (Must要件)</span>
+                            </div>
+                            <p>・事実系項目（選考フロー・事業概要・ニュース等） ➔ <span class="bg-blue-100 font-semibold px-1 rounded">AI推定情報・公式情報要確認</span> バナーを明記</p>
+                            <p>・解釈系項目（強み/弱み・想定質問等） ➔ <span class="bg-purple-100 text-purple-900 font-semibold px-1 rounded">AI分析情報</span> ラベルを明記</p>
+                        </div>
+                    </div>
+
+                    <!-- 4 Major Research Grid Items (v8 Spec) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 1. Business Overview, Strengths & Weaknesses -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 bg-brand-600 text-white rounded-full text-[10px] flex items-center justify-center font-mono">1</span>
+                                    <span>事業概要・強み・弱み</span>
+                                </h4>
+                                <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">AI推定情報・公式情報要確認</span>
+                            </div>
+                            <p id="resOverview" class="text-xs text-slate-600 leading-relaxed">【事業概要】CtoCフリマアプリの企画・開発。フィンテック（メルペイ）推進。\n【強み】圧倒的知名度と高いアクティブユーザー数。\n【弱み・課題】海外事業（米国）の収益化ペース。</p>
+                        </div>
+
+                        <!-- 2. Selection Process & Tendencies -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 bg-brand-600 text-white rounded-full text-[10px] flex items-center justify-center font-mono">2</span>
+                                    <span>選考フロー・選考傾向</span>
+                                </h4>
+                                <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">AI推定情報・公式情報要確認</span>
+                            </div>
+                            <p id="resProcess" class="text-xs text-slate-600 leading-relaxed">書類選考 ➔ 一次面接（現場） ➔ 二次面接（マネージャー） ➔ 最終面接（役員）。『Go Bold（大胆にやろう）』のカルチャーフィットが非常に強く重視される傾向。</p>
+                        </div>
+
+                        <!-- 3. Expected Interview Questions & Points -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 bg-brand-600 text-white rounded-full text-[10px] flex items-center justify-center font-mono">3</span>
+                                    <span>想定質問 ＆ 回答ポイント</span>
+                                </h4>
+                                <span class="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-medium">AI分析情報</span>
+                            </div>
+                            <p id="resQuestions" class="text-xs text-slate-600 leading-relaxed">Q. これまでに経験した最大の失敗と学びは？\n★ポイント: 挑戦した事実（Go Bold）を評価するため、失敗事例とその後の改善アプローチを定量的データで説明すること。</p>
+                        </div>
+
+                        <!-- 4. Latest Topics & News -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                <h4 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 bg-brand-600 text-white rounded-full text-[10px] flex items-center justify-center font-mono">4</span>
+                                    <span>最新トピックス・ニュース</span>
+                                </h4>
+                                <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">AI推定情報・公式情報要確認</span>
+                            </div>
+                            <p id="resNews" class="text-xs text-slate-600 leading-relaxed">・生成AIを活用した出品サポート機能のアップデート実施。\n・暗号資産取引サービス「メルコイン」の口座開設数が200万口座突破。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Job Posting Info -->
+                <div id="modalTabProfile" class="space-y-4 hidden">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                        <h4 class="font-bold text-sm text-slate-800">登録された募集要項テキスト</h4>
+                        <div id="modalJobDescription" class="p-3.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                            （募集要項がここに表示されます）
+                        </div>
+                        <p class="text-[11px] text-slate-400">※ユーザーが貼り付けた募集要項テキストは不改変のまま保持されます。</p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ES Preview & Status History Timeline -->
+                <div id="modalTabES" class="space-y-6 hidden">
+                    <!-- ES Preview Box -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-slate-800">志望動機・ES作成プレビュー (v8仕様)</h4>
+                            <button onclick="alert('「ES・履歴書作成 (画面No.7)」へ遷移します');" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-lg transition">
+                                <i class="fa-solid fa-pen-to-square"></i> ES編集画面へ
+                            </button>
+                        </div>
+                        <div id="modalMotivationText" class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                            【志望動機】貴社の「Go Bold」という行動指針と、テクノロジーで個人の可能性を広げるミッションに強く共感し志望いたしました。大学時代のマーケティングインターンで磨いたデータ分析力を活かし...
+                        </div>
+                    </div>
+
+                    <!-- Status History Timeline (Pass Condition ⑦) -->
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-brand-600"></i>
+                            <span>選考ステータス変更履歴タイムライン</span>
+                        </h4>
+                        <div id="modalHistoryTimeline" class="border-l-2 border-brand-200 ml-3 pl-4 space-y-4">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-100 px-6 py-3 border-t border-slate-200 flex justify-between items-center shrink-0">
+                <span class="text-xs text-slate-500">企業ID: <span id="modalCompanyId" class="font-mono">CMP-001</span></span>
+                <button onclick="closeCompanyModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+<div id="passwordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brand-600"></i>
+                    <span>パスワード変更</span>
+                </h3>
+                <button onclick="document.getElementById('passwordModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="event.preventDefault(); handlePasswordChange();" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">現在のパスワード</label>
+                    <input type="password" id="currentPassword" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">新しいパスワード</label>
+                    <input type="password" id="newPassword" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300">
+                    <p class="text-[11px] text-slate-500">※8文字以上かつ英大文字・英小文字・数字必須（Supabase仕様）</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">新しいパスワード（確認用）</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300">
+                </div>
+
+                <div id="passwordError" class="hidden p-3 bg-rose-50 text-rose-700 text-xs rounded-xl font-medium"></div>
+
+                <div class="pt-2 flex gap-3 justify-end">
+                    <button type="button" onclick="document.getElementById('passwordModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow">変更保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<div id="toastNotification" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+        <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="text-sm font-medium" id="toastMessage">保存しました</div>
+    </div>
+
+  
+  <script src="js/navigation.js" defer></script>
+  <script src="js/mypage.js" defer></script>
+  <script src="js/companies.js" defer></script>
+  <script src="js/add-company.js" defer></script>
+  <script src="js/common.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
